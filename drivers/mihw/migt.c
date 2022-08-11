@@ -32,7 +32,6 @@
 #include <linux/hrtimer.h>
 #include <linux/sched/core_ctl.h>
 #include <linux/cred.h>
-#include <linux/pkg_stat.h>
 
 #define CREATE_TRACE_POINTS
 #include "migt_trace.h"
@@ -124,7 +123,7 @@ int vip_task_schedboost;
 int fas_power_mod;
 module_param(fas_power_mod, uint, 0644);
 
-#ifdef CONFIG_PACKAGE_RUNTIME_INFO
+#if IS_ENABLED(CONFIG_PACKAGE_RUNTIME_INFO)
 static u64 migt_monitor_thresh;
 static u64 migt_fast_div;
 static unsigned int migt_viptask_thresh = 50;
@@ -1090,7 +1089,7 @@ static struct miscdevice migt_misc = {
 	.fops = &migt_fops,
 };
 
-#ifdef CONFIG_PACKAGE_RUNTIME_INFO
+#if IS_ENABLED(CONFIG_PACKAGE_RUNTIME_INFO)
 
 static void vtask_boost_in_hrtimer(int timeout_ms)
 {

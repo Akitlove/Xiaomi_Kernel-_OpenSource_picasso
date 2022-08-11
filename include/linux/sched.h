@@ -29,7 +29,9 @@
 #include <linux/mm_event.h>
 #include <linux/task_io_accounting.h>
 #include <linux/rseq.h>
+#if IS_ENABLED(CONFIG_PACKAGE_RUNTIME_INFO)
 #include <linux/pkg_stat.h>
+#endif
 
 /* task_struct member predeclarations (sorted alphabetically): */
 struct audit_context;
@@ -638,6 +640,9 @@ struct ravg {
 	u32 coloc_demand;
 	u32 sum_history[RAVG_HIST_SIZE_MAX];
 	u32 *curr_window_cpu, *prev_window_cpu;
+#if IS_ENABLED(CONFIG_MIHW)
+	u64 proc_load;
+#endif
 	u32 curr_window, prev_window;
 	u32 pred_demand;
 	u8 busy_buckets[NUM_BUSY_BUCKETS];
@@ -1389,9 +1394,11 @@ struct task_struct {
 	 */
 	u64				timer_slack_ns;
 	u64				default_timer_slack_ns;
+#if IS_ENABLED(CONFIG_MIHW)
 	unsigned int			top_app;
 	unsigned int			inherit_top_app;
 	unsigned int    		critical_task;
+#endif
 #ifdef CONFIG_PERF_CRITICAL_RT_TASK
 	unsigned int    		critical_rt_task;
 #endif
@@ -1501,7 +1508,7 @@ struct task_struct {
 	/* task is frozen/stopped (used by the cgroup freezer) */
 	ANDROID_KABI_USE(1, unsigned frozen:1);
 
-#ifdef CONFIG_PACKAGE_RUNTIME_INFO
+#if IS_ENABLED(CONFIG_PACKAGE_RUNTIME_INFO)
 	struct package_runtime_info pkg;
 #endif
 
@@ -1510,7 +1517,6 @@ struct task_struct {
 		atomic_t running;
 		bool free_stack;
 	} async_free;
-
 	/*
 	 * New fields for task_struct should be added above here, so that
 	 * they are included in the randomized portion of task_struct.

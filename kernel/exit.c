@@ -192,7 +192,7 @@ void release_task(struct task_struct *p)
 	struct task_struct *leader;
 	int zap_leader;
 repeat:
-#ifdef CONFIG_PACKAGE_RUNTIME_INFO
+#if IS_ENABLED(CONFIG_PACKAGE_RUNTIME_INFO)
 	if (user_pkg(p->cred->user->uid.val)) {
 		write_lock_irq(&p->cred->user->pkg.lock);
 		list_del(&(p->pkg.list));

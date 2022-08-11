@@ -86,8 +86,8 @@ static unsigned int debug_pcost;
 module_param(debug_pcost, uint, 0644);
 static unsigned int power_unit = 60 * HZ; /*1 min*/
 module_param(power_unit, uint, 0644);
-static unsigned int disable_pcost = 1;
-module_param(disable_pcost, uint, 0644);
+static unsigned int disable_cpu_pcost = 1;
+module_param(disable_cpu_pcost, uint, 0644);
 static struct cluster_devinfo cluster_info[MAX_CLUSTER];
 static DEFINE_PER_CPU(struct cpu_state, cpu_st);
 static struct workqueue_struct *ea_wq;
@@ -190,7 +190,7 @@ static int cpufreq_notifier_trans(struct notifier_block *nb,
 	struct cpufreq_freqs *freq = (struct cpufreq_freqs *)data;
 	unsigned int cpu = freq->cpu, new_freq = freq->new;
 
-	if (likely(disable_pcost))
+	if (likely(disable_cpu_pcost))
 		return NOTIFY_OK;
 
 	if (val != CPUFREQ_POSTCHANGE)

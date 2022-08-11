@@ -2871,6 +2871,7 @@ static const struct file_operations proc_pid_set_critical_rt_task_operations = {
 	.release	= single_release,
 };
 #endif
+
 #ifdef CONFIG_SF_BINDER
 static int sf_binder_task_show(struct seq_file *m, void *v)
 {
@@ -2955,6 +2956,8 @@ static const struct file_operations proc_pid_set_sf_binder_task_operations = {
 	.release	= single_release,
 };
 #endif
+
+#if IS_ENABLED(CONFIG_MIHW)
 static int critical_task_show(struct seq_file *m, void *v)
 {
 	struct inode *inode = m->private;
@@ -3882,6 +3885,7 @@ static const struct pid_entry tgid_base_stuff[] = {
 	REG("timerslack_ns", S_IRUGO|S_IWUGO, proc_pid_set_timerslack_ns_operations),
 	REG("top_app", S_IRUGO|S_IWUGO, proc_pid_set_top_app_operations),
 	REG("critical_task", S_IRUGO|S_IWUGO, proc_pid_set_critical_task_operations),
+#endif
 #ifdef CONFIG_PERF_CRITICAL_RT_TASK
 	REG("critical_rt_task", S_IRUGO|S_IWUGO, proc_pid_set_critical_rt_task_operations),
 #endif

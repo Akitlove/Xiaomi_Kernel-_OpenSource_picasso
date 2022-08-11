@@ -341,7 +341,7 @@ int copy_creds(struct task_struct *p, unsigned long clone_flags)
 		kdebug("share_creds(%p{%d,%d})",
 		       p->cred, atomic_read(&p->cred->usage),
 		       read_cred_subscribers(p->cred));
-#ifdef CONFIG_PACKAGE_RUNTIME_INFO
+#if IS_ENABLED(CONFIG_PACKAGE_RUNTIME_INFO)
 		if (user_pkg(p->cred->user->uid.val)) {
 			write_lock_irq(&p->cred->user->pkg.lock);
 			list_add(&p->pkg.list, &p->cred->user->pkg.list);
@@ -383,7 +383,7 @@ int copy_creds(struct task_struct *p, unsigned long clone_flags)
 
 	atomic_inc(&new->user->processes);
 	p->cred = p->real_cred = get_cred(new);
-#ifdef CONFIG_PACKAGE_RUNTIME_INFO
+#if IS_ENABLED(CONFIG_PACKAGE_RUNTIME_INFO)
 	if (user_pkg(new->user->uid.val)) {
 		write_lock_irq(&new->user->pkg.lock);
 		list_add(&p->pkg.list, &new->user->pkg.list);
@@ -493,7 +493,7 @@ int commit_creds(struct cred *new)
 		atomic_inc(&new->user->processes);
 	rcu_assign_pointer(task->real_cred, new);
 	rcu_assign_pointer(task->cred, new);
-#ifdef CONFIG_PACKAGE_RUNTIME_INFO
+#if IS_ENABLED(CONFIG_PACKAGE_RUNTIME_INFO)
 	if (new->user != old->user) {
 		if (user_pkg(old->user->uid.val)) {
 			write_lock_irq(&old->user->pkg.lock);
