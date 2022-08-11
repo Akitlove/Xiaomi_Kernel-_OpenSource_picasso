@@ -178,15 +178,22 @@ struct devfreq {
 	unsigned long flag;
 	void *ea_private;
 
+#if IS_ENABLED(CONFIG_MIGT_ENERGY_MODEL)
+	unsigned long flag;
+	void *ea_private;
+#endif
+
 	struct srcu_notifier_head transition_notifier_list;
 	bool dev_suspended;
 };
 
+#if IS_ENABLED(CONFIG_MIGT_ENERGY_MODEL)
 /*
  * Per devfreq flags
  */
-#define DF_NORMAL              0x0             /* nomal dev*/
-#define DF_GPU                 0x00000002      /* I am an gpu dev */
+#define DF_NORMAL		0x0		/* nomal dev*/
+#define DF_GPU			0x00000002	/* I am an gpu dev */
+#endif
 
 struct devfreq_freqs {
 	unsigned long old;

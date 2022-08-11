@@ -74,6 +74,10 @@ unsigned int sysctl_sched_sync_hint_enable = 1;
  */
 unsigned int sysctl_sched_cstate_aware = 1;
 
+#if IS_ENABLED(CONFIG_PACKAGE_RUNTIME_INFO)
+unsigned int sysctl_boost_stask_to_big = 1;
+#endif
+
 /*
  * The initial- and re-scaling of tunables is configurable
  *
@@ -101,6 +105,17 @@ static unsigned int normalized_sysctl_sched_base_slice	= 750000ULL;
  */
 unsigned int sysctl_sched_child_runs_first __read_mostly;
 
+/*
+ * SCHED_OTHER wake-up granularity.
+ *
+ * This option delays the preemption effects of decoupled workloads
+ * and reduces their over-scheduling. Synchronous workloads will still
+ * have immediate wakeup/sleep latencies.
+ *
+ * (default: 1 msec * (1 + ilog(ncpus)), units: nanoseconds)
+ */
+unsigned int sysctl_sched_wakeup_granularity		= 1000000UL;
+unsigned int normalized_sysctl_sched_wakeup_granularity	= 1000000UL;
 const_debug unsigned int sysctl_sched_migration_cost	= 500000UL;
 DEFINE_PER_CPU_READ_MOSTLY(int, sched_load_boost);
 
@@ -7130,6 +7145,20 @@ static int get_start_cpu(struct task_struct *p, bool sync_boost)
 	if (sync_boost && rd->mid_cap_orig_cpu != -1)
 		return rd->mid_cap_orig_cpu;
 
+#if IS_ENABLED(CONFIG_PACKAGE_RUNTIME_INFO)
+	if (game_super_task(p)) {
+		if (sysctl_boost_stask_to_big)
+			return rd->max_cap_orig_cpu;
+		return rd->mid_cap_orig_cpu;
+	}
+
+	if (game_vip_task(p))
+		return rd->mid_cap_orig_cpu;
+
+	if (fas_power_bias(p))
+		return rd->min_cap_orig_cpu;
+#endif
+
 	if (start_cpu == -1 || start_cpu == rd->max_cap_orig_cpu)
 		return start_cpu;
 
@@ -7185,6 +7214,14 @@ static void find_best_target(struct sched_domain *sd, cpumask_t *cpus,
 	struct task_struct *curr_tsk;
 	bool prioritized_task = prefer_high_cap && p->prio <= DEFAULT_PRIO;
 	
+#if IS_ENABLED(CONFIG_MIHW)
+	struct root_domain *rd;
+#endif
+#if IS_ENABLED(CONFIG_PACKAGE_RUNTIME_INFO)
+	if (!prefer_idle)
+		prefer_idle = !!game_vip_task(p);
+#endif
+
 	/*
 	 * In most cases, target_capacity tracks capacity_orig of the most
 	 * energy efficient CPU candidate, thus requiring to minimise
@@ -7598,6 +7635,22 @@ static void find_best_target(struct sched_domain *sd, cpumask_t *cpus,
 		 * don't iterate lower capacity CPUs unless the task can't be
 		 * accommodated in the higher capacity CPUs.
 		 */
+#if IS_ENABLED(CONFIG_PACKAGE_RUNTIME_INFO)
+		if (!sysctl_boost_stask_to_big) {
+			if (best_idle_cpu != -1) {
+				if (game_vip_task(p))
+					break;
+			} else if (target_cpu != -1 || best_active_cpu != -1) {
+				if (game_vip_task(p))
+					break;
+			}
+		} else {
+			if (game_vip_task(p) &&
+				(best_idle_cpu != -1 || target_cpu != -1 || best_active_cpu != -1))
+				break;
+		}
+#endif
+
 		if ((prefer_idle && best_idle_cpu != -1) ||
 		    (prioritized_task && best_prioritized_cpu != -1) ||
 		    (prefer_high_cap && p->prio > DEFAULT_PRIO &&
@@ -8159,8 +8212,11 @@ static int find_energy_efficient_cpu(struct task_struct *p, int prev_cpu,
 	if (p->state == TASK_WAKING)
 		delta = task_util(p);
 #endif
-	if (task_placement_boost_enabled(p) || fbt_env.need_idle ||
-	    prefer_high_cap || is_rtg || __cpu_overutilized(prev_cpu, delta) ||
+	if (task_placement_boost_enabled(p) || fbt_env.need_idle || boosted ||
+#if IS_ENABLED(CONFIG_PACKAGE_RUNTIME_INFO)
+	    game_vip_task(p) ||
+#endif
+	    is_rtg || __cpu_overutilized(prev_cpu, delta) ||
 	    !task_fits_max(p, prev_cpu) || cpu_isolated(prev_cpu)) {
 		best_energy_cpu = cpu;
 		goto unlock;
@@ -8217,6 +8273,14 @@ eas_not_ready:
 	return -1;
 }
 
+#if IS_ENABLED(CONFIG_PACKAGE_RUNTIME_INFO)
+static __inline__ void wake_render(struct task_struct *p)
+{
+	if (is_render_thread(p))
+		current->pkg.migt.wake_render++;
+}
+#endif
+
 /*
  * select_task_rq_fair: Select target runqueue for the waking task in domains
  * that have the 'sd_flag' flag set. In practice, this is SD_BALANCE_WAKE,
@@ -8257,6 +8321,10 @@ select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_f
 			     cpu_rq(cpu)->rd->mid_cap_orig_cpu :
 			     cpu_rq(cpu)->rd->max_cap_orig_cpu;
 			bool sync_boost = sync && cpu >= high_cap_cpu;
+
+#if IS_ENABLED(CONFIG_PACKAGE_RUNTIME_INFO)
+			wake_render(p);
+#endif
 
 			if (uclamp_latency_sensitive(p) && !sched_feat(EAS_PREFER_IDLE) && !sync)
 				goto sd_loop;
@@ -8361,6 +8429,26 @@ static void task_dead_fair(struct task_struct *p)
 	remove_entity_load_avg(&p->se);
 }
 #endif /* CONFIG_SMP */
+
+static unsigned long wakeup_gran(struct sched_entity *se)
+{
+	unsigned long gran = sysctl_sched_wakeup_granularity;
+
+	/*
+	 * Since its curr running now, convert the gran from real-time
+	 * to virtual-time in his units.
+	 *
+	 * By using 'se' instead of 'curr' we penalize light tasks, so
+	 * they get preempted easier. That is, if 'se' < 'curr' then
+	 * the resulting gran will be larger, therefore penalizing the
+	 * lighter, if otoh 'se' > 'curr' then the resulting gran will
+	 * be smaller, again penalizing the lighter task.
+	 *
+	 * This is especially important for buddies when the leftmost
+	 * task is higher priority than the buddy.
+	 */
+	return calc_delta_fair(gran, se);
+}
 
 static void set_next_buddy(struct sched_entity *se)
 {

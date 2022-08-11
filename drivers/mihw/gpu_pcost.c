@@ -49,8 +49,8 @@ struct gpu_devinfo {
 static int init_gpu_suc;
 static struct gpu_devinfo gdev_zero;
 static struct gpu_devinfo *gdev;
-static unsigned int disable_pcost = 1;
-module_param(disable_pcost, uint, 0644);
+static unsigned int disable_gpu_pcost = 1;
+module_param(disable_gpu_pcost, uint, 0644);
 
 static int gpufreq_notifier_trans(struct notifier_block *nb,
 		unsigned long var, void *ptr);
@@ -167,7 +167,7 @@ static int gpufreq_notifier_trans(struct notifier_block *nb,
 	struct devfreq *devfreq = g_dev->this;
 	struct devfreq_freqs *freqs = (struct devfreq_freqs *)ptr;
 
-	if (likely(disable_pcost))
+	if (likely(disable_gpu_pcost))
 		return NOTIFY_DONE;
 
 	if (unlikely(!devfreq || !(devfreq->flag & DF_GPU)

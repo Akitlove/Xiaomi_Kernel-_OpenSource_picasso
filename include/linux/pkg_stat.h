@@ -60,7 +60,7 @@ enum MIGT_TASK_TYPE {
 
 #define PKG_TASK_BUSY		1
 
-#ifdef CONFIG_PACKAGE_RUNTIME_INFO
+#if IS_ENABLED(CONFIG_PACKAGE_RUNTIME_INFO)
 struct package_runtime_info {
 	rwlock_t lock;
 	struct list_head list;
