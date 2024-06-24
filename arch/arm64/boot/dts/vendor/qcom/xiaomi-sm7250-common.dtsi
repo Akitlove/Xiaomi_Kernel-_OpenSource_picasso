@@ -76,32 +76,32 @@
 			qcom,silver-khz = <1804800>;
 			qcom,gold-khz = <1728000>;
 			qcom,prime-khz = <1766400>;
-			qcom,trip-deg = <53000>;
+			qcom,trip-deg = <54000>;
 		};
 
 		zone@6 {
 			reg = <6>;
-			qcom,silver-khz = <1651200>;
+			qcom,silver-khz = <1804800>;
 			qcom,gold-khz = <1478400>;
 			qcom,prime-khz = <1401600>;
-			qcom,trip-deg = <55000>;
+			qcom,trip-deg = <56000>;
 		};
 
 		zone@7 {
 			reg = <7>;
-			qcom,silver-khz = <1516800>;
-			qcom,gold-khz = <1478400>;
+			qcom,silver-khz = <1651200>;
+			qcom,gold-khz = <1152000>;
 			qcom,prime-khz = <1094400>;
-			qcom,trip-deg = <57000>;
+			qcom,trip-deg = <58000>;
 		};
 
 
 		zone@8 {
 			reg = <8>;
-			qcom,silver-khz = <1075200>;
-			qcom,gold-khz = <1478400>;
+			qcom,silver-khz = <864000>;
+			qcom,gold-khz = <1152000>;
 			qcom,prime-khz = <806400>;
-			qcom,trip-deg = <62000>;
+			qcom,trip-deg = <60000>;
 		};
 	};
 };
