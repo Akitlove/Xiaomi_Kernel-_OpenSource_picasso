@@ -28,7 +28,7 @@ TARGET_KERNEL_DTBO=arch/arm64/boot/dtbo.img
 TARGET_KERNEL_NAME=Driftwood-Kernel;
 
 DEFCONFIG_PATH=arch/arm64/configs
-DEFCONFIG_NAME=vendor/picasso_user_defconfig;
+DEFCONFIG_NAME=picasso_defconfig;
 
 LOCAL_VERSION_NUMBER=$(cat $DEFCONFIG_PATH/$DEFCONFIG_NAME | grep CONFIG_LOCALVERSION= | cut -d = -f 2 | sed 's/"//g' | sed 's/-Driftwood-//g')
 TARGET_KERNEL_MOD_VERSION=$(make kernelversion)-$LOCAL_VERSION_NUMBER;
