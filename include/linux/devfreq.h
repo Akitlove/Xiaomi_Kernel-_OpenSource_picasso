@@ -175,8 +175,6 @@ struct devfreq {
 	unsigned int *trans_table;
 	unsigned long *time_in_state;
 	unsigned long last_stat_updated;
-	unsigned long flag;
-	void *ea_private;
 
 #if IS_ENABLED(CONFIG_MIGT_ENERGY_MODEL)
 	unsigned long flag;
